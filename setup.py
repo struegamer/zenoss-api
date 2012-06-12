@@ -26,7 +26,7 @@ setup(
         description='Zenoss JSON API Command line client',
         author='Stephan Adig',
         author_email='stephan.adig@citrix.com',
-        url='',
+        url='http://github.com/sadig/zenoss-api',
         packages=['zenoss'],
         scripts=[
             'scripts/zencli'
