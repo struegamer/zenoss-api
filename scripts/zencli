@@ -1,0 +1,112 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#################################################################################
+#
+#    zencli.py - A Zenoss JSON API Commandline Client
+#    Copyright 2012 Stephan Adig <stephan.adig@citrix.com>
+#       Licensed under the Apache License, Version 2.0 (the "License");
+#       you may not use this file except in compliance with the License.
+#       You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#       Unless required by applicable law or agreed to in writing, software
+#       distributed under the License is distributed on an "AS IS" BASIS,
+#       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#       See the License for the specific language governing permissions and
+#       limitations under the License.
+#################################################################################
+
+import sys
+import argparse
+from zenoss import ZenossAPI
+
+
+def list_prodstates(zenoss=None):
+    if zenoss is None:
+        raise Exception('Zenoss Server Object is None')
+    prodstates=zenoss.get_production_states()
+    if prodstates['success']:
+        print('{0:50} {1:10}').format('Prod State Name','Prod State Value')
+        for state in prodstates['data']:
+            print('{0:50} {1:10}').format(state['name'],state['value'])
+
+def set_prodstates(zenoss=None,prodstate=0,devicenames=None):
+    if zenoss is None:
+        raise Exception('Zenoss Server Object is None')
+    devices=devicenames.split(',')
+    devuids=[]
+    resdev=zenoss.get_device_by_name(devices)
+    for dev in resdev['devices']:
+        devuids.append(dev['uid'])
+    result=zenoss.set_production_state(devuids,prodstate,resdev['hash'])
+    if result['success']:
+        print result['msg']
+    resdev=zenoss.get_device_by_name(devices)
+    print('{0:50} {1:10}').format('Device Name','Production State')
+    for dev in resdev['devices']:
+        print('{0:50} {1:30}').format(dev['name'],dev['productionState'])
+
+def search_devices(zenoss=None,devicenames=None):
+    if zenoss is None:
+        raise Exception('Zenoss Server Object is None')
+    devices=devicenames.split(',')
+    if len(devices)==1:
+        devices=devicenames
+    resdev=zenoss.get_device_by_name(devices)
+    for dev in resdev['devices']:
+        print('{0:50} {1:30}').format(dev['name'],dev['productionState'])
+
+def process_args(args):
+    zo=ZenossAPI(args.zenoss_url,args.zenoss_user,args.zenoss_pass)
+
+    if args.list_prodstate and args.set_prodstates != 0:
+        print 'Please specify only one of the arguments, --list-prods-states or --set-prod-state'
+        sys.exit(1)
+    if args.list_prodstate and args.search:
+        print 'Please specify only one of the arguments, --list-prod-states or --search'
+        sys.exit(1)
+    if args.search and args.set_prodstates !=0:
+        print 'Please specifiy only one of the arguments, --set-prod-state or --search'
+        sys.exit(1)
+
+
+    if args.list_prodstate:
+        list_prodstates(zo)
+        return
+
+    if args.search is False:
+        if args.set_prodstates!=0 and args.devicenames is not None and args.devicenames != '':
+            set_prodstates(zo,args.set_prodstates,args.devicenames)
+            return 
+        else:
+            if args.set_prodstates == 0:
+                print 'Production State Value needs to be != 0'
+            if args.devicenames is None or args.devicenames=='':
+                print 'There are no devicenames set'
+            sys.exit(1)
+
+    if args.search:
+        search_devices(zo,args.devicenames)
+        return
+
+if __name__=='__main__':
+    # zo=ZenossAPI('http://xenserver01.sourcecode.de:3001','sadig','tg41re52')
+    parser=argparse.ArgumentParser(description='Zenoss API CLI')
+    parser.add_argument('--zenoss-url',action='store',default=None,dest='zenoss_url')
+    parser.add_argument('--zenoss-user',action='store',default=None,dest='zenoss_user')
+    parser.add_argument('--zenoss-pass',action='store',default=None,dest='zenoss_pass')
+    parser.add_argument('--list-prod-states',action='store_true',default=False,dest='list_prodstate')
+    parser.add_argument('--set-prod-state',metavar='N', type=int, default=0, dest='set_prodstates',action='store')
+    parser.add_argument('--search',action='store_true',default=False,dest='search')
+    parser.add_argument('--device-names',metavar='<NAME>',default=None,dest='devicenames',action='store')
+    args=parser.parse_args()
+
+    if args.zenoss_url is not None and args.zenoss_url != '' and \
+            args.zenoss_user is not None and args.zenoss_user != '' and \
+            args.zenoss_pass is not None and args.zenoss_pass != '':
+        print
+        process_args(args)
+        sys.exit(0)
+    print 'You need to provide at least Zenoss URL, user and password!'
+    sys.exit(1)
