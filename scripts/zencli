@@ -35,6 +35,8 @@ def set_prodstates(zenoss=None,prodstate=0,devicenames=None):
     if zenoss is None:
         raise Exception('Zenoss Server Object is None')
     devices=devicenames.split(',')
+    if len(devices)==1:
+        devices=devicenames
     devuids=[]
     resdev=zenoss.get_device_by_name(devices)
     for dev in resdev['devices']:
