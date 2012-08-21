@@ -93,7 +93,7 @@ def process_args(args):
         return
 
 if __name__=='__main__':
-    # zo=ZenossAPI('http://xenserver01.sourcecode.de:3001','sadig','tg41re52')
+    # zo=ZenossAPI('http://xenserver01.sourcecode.de:3001','sadig','')
     parser=argparse.ArgumentParser(description='Zenoss API CLI')
     parser.add_argument('--zenoss-url',action='store',default=None,dest='zenoss_url')
     parser.add_argument('--zenoss-user',action='store',default=None,dest='zenoss_user')
